@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { firestore } from '../firebase';
-import { Typography, Modal, Box, Stack, TextField, Button } from "@mui/material";
+import { Typography, Modal, Box, Stack, TextField, Button, Card, CardContent, CardActions } from "@mui/material";
 import { collection, query, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 
 export default function Home() {
@@ -10,6 +10,7 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState({ id: '', quantity: 1 });
   const [searchTerm, setSearchTerm] = useState('');
+  const [isEditing, setIsEditing] = useState(false); // New state to track if we are editing
 
   const updateInventory = async () => {
     try {
@@ -34,6 +35,7 @@ export default function Home() {
       updateInventory();
       setCurrentItem({ id: '', quantity: 1 });
       setOpen(false);
+      setIsEditing(false); // Reset the editing state
     } catch (error) {
       console.error("Error adding/updating item: ", error);
     }
@@ -52,6 +54,7 @@ export default function Home() {
   const handleEditItem = (item) => {
     setCurrentItem(item);
     setOpen(true);
+    setIsEditing(true); // Set editing state to true when editing an item
   };
 
   useEffect(() => {
@@ -71,27 +74,40 @@ export default function Home() {
   }, [searchTerm, inventory]);
 
   return (
-    <Box width="100vw" height="100vh" display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2}>
-      <TextField
-        variant="outlined"
-        fullWidth
-        placeholder="Search Items"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mb: 2, maxWidth: '400px' }}
-      />
-      <Button variant="contained" onClick={() => setOpen(true)}>Add Item</Button>
+    <Box width="100vw" height="100vh" display="flex" flexDirection="column" alignItems="center" p={3}>
+      <Box width="100%" maxWidth="600px" mb={3}>
+        <TextField
+          variant="outlined"
+          fullWidth
+          placeholder="Search Items"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </Box>
+      <Button variant="contained" onClick={() => { setOpen(true); setIsEditing(false); setCurrentItem({ id: '', quantity: 1 }); }} sx={{ mb: 3 }}>
+        Add Item
+      </Button>
       <Modal open={open} onClose={() => setOpen(false)}>
-        <Box position="absolute" top="50%" left="50%" width={400} bgcolor="white" border="2px solid #000" boxShadow={24} p={4} display="flex" flexDirection="column" gap={3} sx={{ transform: "translate(-50%,-50%)" }}>
-          <Typography variant="h6">{currentItem.id ? 'Edit Item' : 'Add Item'}</Typography>
-          <Stack width="100%" direction="column" spacing={2}>
+        <Box
+          position="absolute"
+          top="50%"
+          left="50%"
+          width={400}
+          bgcolor="background.paper"
+          border="2px solid #000"
+          boxShadow={24}
+          p={4}
+          sx={{ transform: "translate(-50%, -50%)" }}
+        >
+          <Typography variant="h6">{isEditing ? 'Edit Item' : 'Add Item'}</Typography>
+          <Stack width="100%" direction="column" spacing={2} mt={2}>
             <TextField
               label="Item Name"
               variant="outlined"
               fullWidth
               value={currentItem.id}
               onChange={(e) => setCurrentItem({ ...currentItem, id: e.target.value })}
-              disabled={Boolean(currentItem.id)}
+              disabled={isEditing} // Disable only if editing
             />
             <TextField
               label="Quantity"
@@ -102,25 +118,24 @@ export default function Home() {
               onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value, 10) })}
             />
             <Button variant="contained" onClick={handleAddUpdateItem}>
-              {currentItem.id ? 'Update Item' : 'Add Item'}
+              {isEditing ? 'Update Item' : 'Add Item'}
             </Button>
           </Stack>
         </Box>
       </Modal>
-      <Box border="1px solid black" width="800px">
-        <Box height="100px" display="flex" bgcolor="#ADD8E6" alignItems="center" justifyContent="center">
-          <Typography variant="h2" color="#333">Pantry Inventory</Typography>
-        </Box>
-      </Box>
-      <Box>
+      <Typography variant="h4" gutterBottom>Pantry Inventory</Typography>
+      <Box display="flex" flexWrap="wrap" gap={2} justifyContent="center">
         {filteredInventory.map(item => (
-          <Box key={item.id} display="flex" justifyContent="space-between" alignItems="center" width="400px" p={1} borderBottom="1px solid #ccc">
-            <Typography>{item.id}: {item.quantity}</Typography>
-            <Box display="flex" gap={1}>
-              <Button variant="contained" color="primary" onClick={() => handleEditItem(item)}>Edit</Button>
-              <Button variant="contained" color="secondary" onClick={() => handleDeleteItem(item)}>Delete</Button>
-            </Box>
-          </Box>
+          <Card key={item.id} sx={{ width: 300 }}>
+            <CardContent>
+              <Typography variant="h6">{item.id}</Typography>
+              <Typography color="textSecondary">Quantity: {item.quantity}</Typography>
+            </CardContent>
+            <CardActions>
+              <Button size="small" color="primary" onClick={() => handleEditItem(item)}>Edit</Button>
+              <Button size="small" color="secondary" onClick={() => handleDeleteItem(item)}>Delete</Button>
+            </CardActions>
+          </Card>
         ))}
       </Box>
     </Box>

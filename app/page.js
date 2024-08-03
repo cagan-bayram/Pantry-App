@@ -12,6 +12,26 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditing, setIsEditing] = useState(false); // New state to track if we are editing
 
+
+  const handleAddUpdateItem = async () => {
+    try {
+      if (currentItem.id.trim() === '') return;
+      if (currentItem.quantity < 0) { // Added validation
+        alert("Quantity cannot be less than zero.");
+        return;
+      }
+      const docRef = doc(firestore, 'inventory', currentItem.id);
+      await setDoc(docRef, { quantity: currentItem.quantity });
+      updateInventory();
+      setCurrentItem({ id: '', quantity: 1 });
+      setOpen(false);
+      setIsEditing(false); // Reset the editing state
+    } catch (error) {
+      console.error("Error adding/updating item: ", error);
+    }
+  };
+
+  
   const updateInventory = async () => {
     try {
       const q = query(collection(firestore, 'inventory'));
@@ -24,20 +44,6 @@ export default function Home() {
       setFilteredInventory(inventoryList);
     } catch (error) {
       console.error("Error fetching inventory: ", error);
-    }
-  };
-
-  const handleAddUpdateItem = async () => {
-    try {
-      if (currentItem.id.trim() === '') return;
-      const docRef = doc(firestore, 'inventory', currentItem.id);
-      await setDoc(docRef, { quantity: currentItem.quantity });
-      updateInventory();
-      setCurrentItem({ id: '', quantity: 1 });
-      setOpen(false);
-      setIsEditing(false); // Reset the editing state
-    } catch (error) {
-      console.error("Error adding/updating item: ", error);
     }
   };
 
